@@ -65,6 +65,7 @@
       <el-table-column label="备注说明" align="center" prop="remark" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
+          <el-button link type="primary"  @click="getRegionInfo(scope.row)" v-hasPermi="['manage:node:list']">查看详情</el-button>
           <el-button link type="primary"  @click="handleUpdate(scope.row)" v-hasPermi="['manage:region:edit']">修改</el-button>
           <el-button link type="primary"  @click="handleDelete(scope.row)" v-hasPermi="['manage:region:remove']">删除</el-button>
         </template>
@@ -96,12 +97,27 @@
         </div>
       </template>
     </el-dialog>
+    <!--查看详情对话框  -->
+    <el-dialog :title="title" v-model="regionInfoOpen" width="500px" append-to-body>
+      <el-form ref="regionRef" :model="form" :rules="rules" label-width="80px">
+        <el-form-item label="区域名称" prop="regionName">
+          <el-input v-model="form.regionName" placeholder="请输入区域名称" disabled />
+        </el-form-item>
+      </el-form>
+      <label>包含点位：</label>
+      <el-table  :data="nodeList" style="width: 100%; margin-top: 10px;">
+        <el-table-column  label="序号" align="center"  type="index" width="50"/>
+        <el-table-column prop="nodeName" label="点位名称" align="center" />
+        <el-table-column prop="vmCount" label="设备数量" align="center" />
+      </el-table>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="Region">
 import { listRegion, getRegion, delRegion, addRegion, updateRegion } from "@/api/manage/region";
-
+import {listNode} from "@/api/manage/node";
+import { loadAllParams } from "../../../api/page";
 const { proxy } = getCurrentInstance();
 
 const regionList = ref([]);
@@ -187,6 +203,28 @@ function handleAdd() {
   reset();
   open.value = true;
   title.value = "添加区域管理";
+}
+
+getRegionInfo
+
+/** 查询区域详情操作 
+ * 初始化参数 nodeList、regionInfoOpen
+  */
+const nodeList = ref([]);  //nodeList 初始值为空list
+const regionInfoOpen = ref(false);//regionInfoOpen 初始值 ref(false);
+function getRegionInfo(row) {
+  //查询区域信息
+  reset();
+  const _id = row.id 
+  getRegion(_id).then(response => {
+    form.value = response.data;
+    //查询点位信息
+  loadAllParams.regionId = row.id; //设置参数 regionId
+    listNode(loadAllParams).then(response => {
+      nodeList.value = response.rows;
+    });
+    regionInfoOpen.value = true;
+  });
 }
 
 /** 修改按钮操作 */
