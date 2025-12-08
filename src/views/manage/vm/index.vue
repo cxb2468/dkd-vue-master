@@ -9,56 +9,7 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="点位Id" prop="nodeId">
-        <el-input
-          v-model="queryParams.nodeId"
-          placeholder="请输入点位Id"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="区域Id" prop="regionId">
-        <el-input
-          v-model="queryParams.regionId"
-          placeholder="请输入区域Id"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="合作商Id" prop="partnerId">
-        <el-input
-          v-model="queryParams.partnerId"
-          placeholder="请输入合作商Id"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="设备型号" prop="vmTypeId">
-        <el-input
-          v-model="queryParams.vmTypeId"
-          placeholder="请输入设备型号"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="设备状态" prop="vmStatus">
-        <el-select v-model="queryParams.vmStatus" placeholder="请选择设备状态，0:未投放;1-运营;3-撤机" clearable>
-          <el-option
-            v-for="dict in vm_status"
-            :key="dict.value"
-            :label="dict.label"
-            :value="dict.value"
-          />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="策略id" prop="policyId">
-        <el-input
-          v-model="queryParams.policyId"
-          placeholder="请输入策略id"
-          clearable
-          @keyup.enter="handleQuery"
-        />
-      </el-form-item>
+     
       <el-form-item>
         <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
         <el-button icon="Refresh" @click="resetQuery">重置</el-button>
@@ -109,20 +60,21 @@
 
     <el-table v-loading="loading" :data="vmList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="主键" align="center" prop="id" />
+      <!-- <el-table-column label="主键" align="center" prop="id" /> -->
       <el-table-column label="设备编号" align="center" prop="innerCode" />
-      <el-table-column label="详细地址" align="center" prop="addr" />
-      <el-table-column label="合作商Id" align="center" prop="partnerId" />
       <el-table-column label="设备类型号" align="center" prop="vmTypeId" />
-      <el-table-column label="设备状态，0:未投放;1-运营;3-撤机" align="center" prop="vmStatus">
+      <el-table-column label="详细地址" align="left" prop="addr" />
+      <el-table-column label="合作商" align="center" prop="partnerId" />
+      
+      <el-table-column label="设备状态" align="center" prop="vmStatus">
         <template #default="scope">
           <dict-tag :options="vm_status" :value="scope.row.vmStatus"/>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['manage:vm:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['manage:vm:remove']">删除</el-button>
+          <el-button link type="primary"  @click="handleUpdate(scope.row)" v-hasPermi="['manage:vm:edit']">修改</el-button>
+          <!-- <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['manage:vm:remove']">删除</el-button> -->
         </template>
       </el-table-column>
     </el-table>
