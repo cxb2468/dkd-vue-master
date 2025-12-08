@@ -9,7 +9,7 @@
           @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="区域ID" prop="regionId">
+      <el-form-item label="区域" prop="regionId">
         <el-select
           v-model="queryParams.regionId"
           placeholder="请选择区域"
@@ -17,7 +17,7 @@
           <el-option v-for="item in regionList" :key="item.id" :label="item.regionName" :value="item.id"></el-option>
         </el-select>
       </el-form-item>
-      <el-form-item label="合作商ID" prop="partnerId">
+      <el-form-item label="合作商" prop="partnerId">
           <el-select
           v-model="queryParams.partnerId"
           placeholder="请选择合作商"

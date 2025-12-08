@@ -287,7 +287,7 @@ function resetPwd (row) {
   proxy.$modal.confirm('你确定要重置该合作商密码吗？').then(function() {
     return resetPartnerPwd(_id);
   }).then(() => {
-    proxy.$modal.msgSuccess("删除成功");
+    proxy.$modal.msgSuccess("密码重置成功");
   }).catch(() => {});
 }
 

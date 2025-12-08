@@ -20,7 +20,7 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="角色id" prop="roleId">
+      <el-form-item label="角色" prop="roleId">
         <!-- <el-input
           v-model="queryParams.roleId"
           placeholder="请输入角色id"
