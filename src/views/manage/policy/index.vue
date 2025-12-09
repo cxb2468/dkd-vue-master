@@ -69,8 +69,9 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['manage:policy:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['manage:policy:remove']">删除</el-button>
+          <el-button link type="primary"  @click="getPolicyInfo(scope.row)" v-hasPermi="['manage:vm:list']">查看详情</el-button>
+          <el-button link type="primary"  @click="handleUpdate(scope.row)" v-hasPermi="['manage:policy:edit']">修改</el-button>
+          <el-button link type="primary"  @click="handleDelete(scope.row)" v-hasPermi="['manage:policy:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -100,11 +101,33 @@
         </div>
       </template>
     </el-dialog>
+    
+    <!-- 查看该策略下设备详情 -->
+     <el-dialog title="查看该策略下设备详情" v-model="policyOpen" width="500px" append-to-body>
+      <el-form ref="policyRef" :model="form" :rules="rules" label-width="80px">
+        <el-form-item label="策略名称" prop="policyName">
+          <el-input v-model="form.policyName" placeholder="请输入策略名称"  disabled/>
+        </el-form-item>
+        <el-form-item label="策略方案" prop="discount">
+          <el-input-number :min="0" :max="100" v-model="form.discount" placeholder="请输入策略方案，如：80代表8折" :step="1" step-strictly  disabled style="width: 100px;"/>%
+        </el-form-item>
+      </el-form>
+      <el-table :data="vmList" >
+
+      <el-table-column label="序号" type="index" align="center" prop="id"  />
+      <el-table-column label="详细地址" align="left" prop="addr" :show-overflow-tooltip="true" />
+      <el-table-column label="设备编号" align="center" prop="innerCode" />
+
+      </el-table>
+
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="Policy">
 import { listPolicy, getPolicy, delPolicy, addPolicy, updatePolicy } from "@/api/manage/policy";
+import {listVm} from "@/api/manage/vm";
+import {loadAllParams} from "@/api/page";
 
 const { proxy } = getCurrentInstance();
 
@@ -233,6 +256,23 @@ function handleExport() {
   proxy.download('manage/policy/export', {
     ...queryParams.value
   }, `policy_${new Date().getTime()}.xlsx`)
+}
+
+/* 获取策略详情列表 */
+const policyOpen = ref(false);
+const vmList = ref([]);
+function getPolicyInfo(row) {
+  // 获取策略数据
+   form.value = row;
+  //组装查询参数 （策略id和分页参数）
+   loadAllParams.policyId = row.policyId;
+  //根据策略id和分页参数，获取该策略设备详情列表
+   listVm (loadAllParams).then(response => {
+     vmList.value = response.rows;
+     console.log(vmList.value);
+     policyOpen.value = true;
+   });  
+
 }
 
 getList();
