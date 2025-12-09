@@ -88,6 +88,7 @@
       <el-table-column label="详细地址" align="left" prop="address" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
+          <el-button link type="primary"  @click="getNodeInfo(scope.row)" v-hasPermi="['manage:vm:list']">查看详情</el-button>
           <el-button link type="primary"  @click="handleUpdate(scope.row)" v-hasPermi="['manage:node:edit']">修改</el-button>
           <el-button link type="primary"  @click="handleDelete(scope.row)" v-hasPermi="['manage:node:remove']">删除</el-button>
         </template>
@@ -149,6 +150,26 @@
         </div>
       </template>
     </el-dialog>
+
+    <el-dialog title="点位设备详情" v-model="nodeOpen" width="650px" append-to-body>
+    <el-table  :data="vmList">
+      <el-table-column label="序号" type="index" align="center" prop="id"  />
+      <el-table-column label="设备编号" align="center" prop="innerCode" />
+
+      <el-table-column label="设备运营状态" align="center" prop="vmStatus">
+        <template #default="scope">
+          <dict-tag :options="vm_status" :value="scope.row.vmStatus"/>
+        </template>
+      </el-table-column>
+      <!-- 显示最后一次供货时间 lastSupplyTime -->
+       <el-table-column label="最后一次供货时间" align="center" prop="lastSupplyTime">
+         <template #default="scope">
+           <span>{{ parseTime(scope.row.lastSupplyTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+         </template>
+       </el-table-column>
+
+    </el-table>
+    </el-dialog>
   </div>
 </template>
 
@@ -156,9 +177,13 @@
 import { listNode, getNode, delNode, addNode, updateNode } from "@/api/manage/node";
 import { listRegion } from "@/api/manage/region";
 import { listPartner } from "@/api/manage/partner";
+import {loadAllParams} from "@/api/page";
+import {listVm} from "@/api/manage/vm";
+
 
 const { proxy } = getCurrentInstance();
 const { business_type } = proxy.useDict('business_type');
+const { vm_status } = proxy.useDict('vm_status');
 
 const nodeList = ref([]);
 const open = ref(false);
@@ -319,7 +344,18 @@ function getPartnerList() {
     console.error("获取合作商列表失败:", error);
     proxy.$modal.notifyError("获取合作商列表失败:" + error.message);
   });
-}       
+}      
+
+/* 查看点位下的设备信息详情 */
+const nodeOpen = ref(false);
+const vmList = ref([]);
+function getNodeInfo(row) {
+     const params = { nodeId: row.id }; 
+     listVm(params).then(response => {
+     vmList.value = response.rows;
+     nodeOpen.value = true;
+  });
+}
 
      
 getRegionList();
