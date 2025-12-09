@@ -61,6 +61,7 @@
     <el-table v-loading="loading" :data="vmList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <!-- <el-table-column label="主键" align="center" prop="id" /> -->
+      <el-table-column label="序号" type="index" align="center" prop="id"  />
       <el-table-column label="设备编号" align="center" prop="innerCode" />
       <el-table-column label="设备类型号" align="center" prop="vmTypeId">
          <template #default="scope">
@@ -69,20 +70,28 @@
           </div>
          </template>
       </el-table-column>
-      <el-table-column label="详细地址" align="left" prop="addr" />
-      <el-table-column label="合作商" align="center" prop="partnerId" >
+      <el-table-column label="详细地址" align="left" prop="addr" :show-overflow-tooltip="true" />
+      <!-- <el-table-column label="合作商" align="center" prop="partnerId" >
         <template #default="scope">
           {{ partnerList.find(partner => partner.id === scope.row.partnerId)?.partnerName || '' }}
         </template>
-      </el-table-column>
-      <el-table-column label="设备状态" align="center" prop="vmStatus">
+      </el-table-column> -->
+      <el-table-column label="运营状态" align="center" prop="vmStatus">
         <template #default="scope">
           <dict-tag :options="vm_status" :value="scope.row.vmStatus"/>
         </template>
       </el-table-column>
+        <el-table-column label="设备运行状态" align="center" prop="vmStatus">
+        <template #default="scope">
+          <span v-if="scope.row.runningStatus">
+            {{ JSON.parse(scope.row.runningStatus).status ? '正常' : '异常' }}
+          </span>
+          <span v-else>异常</span>
+        </template>
+      </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary"  @click="handleUpdate(scope.row)" v-hasPermi="['manage:vm:edit']">修改</el-button>
+          <el-button link type="primary"  @click="getVmInfo(scope.row)" v-hasPermi="['manage:vm:query']">查看详情</el-button>
           <!-- <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['manage:vm:remove']">删除</el-button> -->
         </template>
       </el-table-column>
@@ -98,66 +107,7 @@
 
     <!-- 添加或修改设备管理对话框 -->
     <el-dialog :title="title" v-model="open" width="500px" append-to-body>
-      <el-form ref="vmRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="设备编号" prop="innerCode">
-          <!-- <el-input v-model="form.innerCode" placeholder="请输入设备编号" /> -->
-          <span>{{ form.innerCode == null ? '系统自动生成' : form.innerCode }}</span>
-        </el-form-item>
-        <!-- 当innerCode不为空时，显示最后供货时间 lastSupplyTime -->
-        <el-form-item label="供货时间" prop="lastSupplyTime" v-if="form.innerCode != null">
-          <span>{{ form.lastSupplyTime ? new Date(form.lastSupplyTime).toLocaleString() : '' }}</span>
-        </el-form-item>
-
-        <el-form-item label="设备类型" prop="vmTypeId" v-if="form.innerCode == null">
-          <el-select v-model="form.vmTypeId" placeholder="请选择设备类型" clearable>
-            <el-option
-              v-for="item in vmTypeList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id">
-            </el-option> 
-            </el-select>  
-        </el-form-item>
-        <el-form-item label="设备类型" align="center" prop="vmTypeId" v-if="form.innerCode != null">
-         <template #default>
-          <div v-for="item in vmTypeList" :key="item.id">
-            <span v-if="item.id==form.vmTypeId">{{ item.name }}</span>
-          </div>
-         </template>
-      </el-form-item>
-                <!-- 当innerCode不为空时，显示"设备容量" channelMaxCapacity -->
-         <el-form-item label="设备容量" prop="channelMaxCapacity" v-if="form.innerCode != null">
-          <span>{{ getChannelMaxCapacity(form.vmTypeId) }}</span>
-        </el-form-item>
-        <el-form-item label="设备点位" prop="nodeId" >
-          <el-select v-model="form.nodeId" placeholder="请选择点位" clearable>
-            <el-option
-              v-for="item in nodeList"
-              :key="item.id"
-              :label="item.nodeName"
-              :value="item.id">
-            </el-option> 
-            </el-select>
-        </el-form-item>
-        <!-- 当innerCode不为空时，根据合作商id 匹配显示 partnerName -->
-        <el-form-item label="合作商" prop="partnerId" v-if="form.innerCode != null">
-          <span>{{ partnerList.find(partner => partner.id === form.partnerId)?.partnerName || '' }}</span>
-        </el-form-item>
-        <!-- 当innerCode不为空时，根据regionId 匹配显示 partnerName -->
-         <el-form-item label="所属区域" prop="regionId" v-if="form.innerCode != null">
-          <span>{{ regionList.find(region => region.id === form.regionId)?.regionName || '' }}</span>
-        </el-form-item>
-
-        <el-form-item label="设备地址" prop="address" v-if="form.innerCode != null">
-          {{ form.addr }}
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
-        </div>
-      </template>
+      
     </el-dialog>
   </div>
 </template>
@@ -276,7 +226,7 @@ function handleAdd() {
 }
 
 /** 修改按钮操作 */
-function handleUpdate(row) {
+function getVmInfo(row) {
   reset();
   const _id = row.id || ids.value
   getVm(_id).then(response => {
