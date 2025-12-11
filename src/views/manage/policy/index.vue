@@ -264,7 +264,7 @@ const vmList = ref([]);
 function getPolicyInfo(row) {
   // 获取策略数据
    form.value = row;
-  //组装查询参数 （策略id和分页参数）
+  //row.policyId组装进查询参数 （策略id和分页参数）
    loadAllParams.policyId = row.policyId;
   //根据策略id和分页参数，获取该策略设备详情列表
    listVm (loadAllParams).then(response => {
