@@ -62,6 +62,10 @@
           v-hasPermi="['manage:sku:export']"
         >导出</el-button>
       </el-col>
+      <!--  导入按钮-->
+<el-col :span="1.5">
+    <el-button type="warning" plain icon="Upload" @click="handleExcelImport" v-hasPermi="['manage:sku:add']">导入</el-button>
+</el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -78,7 +82,7 @@
       <el-table-column label="规格" align="center" prop="unit" />
       <el-table-column label="商品价格" align="center" prop="price">
         <template #default="scope">
-          <el-tag>{{ (scope.row.price / 100).toFixed(2) }}元</el-tag>
+          {{ (scope.row.price / 100).toFixed(2) }}元
         </template>
       </el-table-column>
       <el-table-column label="商品类型" align="center" prop="classId">
@@ -113,7 +117,7 @@
           <el-input v-model="form.brandName" placeholder="请输入品牌" />
         </el-form-item>
         <el-form-item label="商品价格" prop="price">
-          <el-input-number controls-position="center" :min="0" :precision="2" :step="0.01"  v-model="form.price" placeholder="请输入商品价格" style="width: 45%" />元
+          <el-input v-model="form.price" placeholder="请输入商品价格，单位分" />
         </el-form-item>
         <el-form-item label="商品类型" prop="classId">
         <el-select v-model="form.classId" placeholder="请选择商品类型" clearable>
@@ -140,6 +144,31 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 数据导入对话框 -->
+<el-dialog title="数据导入" v-model="excelOpen" width="400px" append-to-body>
+  <el-upload ref="uploadRef" class="upload-demo"
+    :action="uploadExcelUrl"
+    :headers="headers"
+    :on-success="handleUploadSuccess"
+    :on-error="handleUploadError"
+    :before-upload="handleBeforeUpload"         
+    :limit="1"
+    :auto-upload="false">
+    <template #trigger>
+      <el-button type="primary">上传文件</el-button>
+    </template>
+    <el-button class="ml-3" type="success" @click="submitUpload">
+      上传
+    </el-button>
+    <template #tip>
+      <div class="el-upload__tip">
+        上传文件仅支持，xls/xlsx格式，文件大小不得超过1M
+      </div>
+    </template>
+  </el-upload>
+</el-dialog>
+
   </div>
 </template>
 
@@ -147,6 +176,7 @@
 import { listSku, getSku, delSku, addSku, updateSku } from "@/api/manage/sku";
 import {listSkuClass} from "@/api/manage/skuClass";
 import {loadAllParams} from "@/api/page";
+import { getToken } from "@/utils/auth";
 import { get } from "@vueuse/core";
 
 const { proxy } = getCurrentInstance();
@@ -258,19 +288,15 @@ function handleUpdate(row) {
   const _skuId = row.skuId || ids.value
   getSku(_skuId).then(response => {
     form.value = response.data;
-    // 将price从分*100转换为元
-    form.value.price = form.value.price / 100;
     open.value = true;
     title.value = "修改商品管理";
   });
 }
 
-/** 提交按钮  提交时将pric从元 转换为分*100   */
+/** 提交按钮 */
 function submitForm() {
   proxy.$refs["skuRef"].validate(valid => {
     if (valid) {
-      // 将price从元转换为分*100
-      form.value.price = form.value.price * 100;
       if (form.value.skuId != null) {
         updateSku(form.value).then(response => {
           proxy.$modal.msgSuccess("修改成功");
@@ -314,6 +340,86 @@ function getSkuClassList() {
   });
 }
 
+
+/* 打开数据导入对话框 */
+const excelOpen = ref(false);
+function handleExcelImport() {
+  excelOpen.value = true;
+}
+
+/* 上传地址 */
+const uploadExcelUrl = ref(import.meta.env.VITE_APP_BASE_API + "/manage/sku/import"); // 上传excel文件地址
+/* 上传请求头 */
+const headers = ref({ Authorization: "Bearer " + getToken() });
+
+/* 上传excel */
+const uploadRef = ref({});
+function submitUpload() {
+  uploadRef.value.submit()
+}
+    
+const props = defineProps({
+  modelValue: [String, Object, Array],
+  // 大小限制(MB)
+  fileSize: {
+    type: Number,
+    default: 1,
+  },
+  // 文件类型, 例如["xls", "xlsx"]
+  fileType: {
+    type: Array,
+    default: () => ["xls", "xlsx"],
+  },
+});
+
+// 上传前loading加载
+function handleBeforeUpload(file) {
+  let isExcel = false;
+  if (props.fileType.length) {
+    let fileExtension = "";
+    if (file.name.lastIndexOf(".") > -1) {
+      fileExtension = file.name.slice(file.name.lastIndexOf(".") + 1);
+    }
+    isExcel = props.fileType.some(type => {
+      if (file.type.indexOf(type) > -1) return true;
+      if (fileExtension && fileExtension.indexOf(type) > -1) return true;
+      return false;
+    });
+  } 
+  if (!isExcel) {
+    proxy.$modal.msgError(
+      `文件格式不正确, 请上传${props.fileType.join("/")}格式文件!`
+    );
+    return false;
+  }
+  if (props.fileSize) {
+    const isLt = file.size / 1024 / 1024 < props.fileSize;
+    if (!isLt) {
+      proxy.$modal.msgError(`上传excel大小不能超过 ${props.fileSize} MB!`);
+      return false;
+    }
+  }
+  proxy.$modal.loading("正在上传excel，请稍候...");
+}
+
+// 上传失败
+function handleUploadError() {
+  proxy.$modal.msgError("上传excel失败");
+  uploadRef.value.clearFiles();
+  proxy.$modal.closeLoading();
+}
+
+// 上传成功回调
+function handleUploadSuccess(res, file) {
+  if (res.code === 200) {
+    proxy.$modal.msgSuccess("上传excel成功");
+    excelOpen.value = false;
+    getList();
+  }else{
+    proxy.$modal.msgError(res.msg);}
+  uploadRef.value.clearFiles();
+  proxy.$modal.closeLoading();
+}  
 getSkuClassList();
 getList();
 </script>
