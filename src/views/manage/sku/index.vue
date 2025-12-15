@@ -156,10 +156,10 @@
     :limit="1"
     :auto-upload="false">
     <template #trigger>
-      <el-button type="primary">上传文件</el-button>
+      <el-button type="primary">选择文件</el-button>
     </template>
     <el-button class="ml-3" type="success" @click="submitUpload">
-      上传
+      上传文件
     </el-button>
     <template #tip>
       <div class="el-upload__tip">

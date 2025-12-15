@@ -82,6 +82,7 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
+        <el-button link type="primary"  @click="handleGoods(scope.row)" v-hasPermi="['manage:vm:edit']">货道</el-button>
           <el-button link type="primary"  @click="handleUpdatePolicy(scope.row)" v-hasPermi="['manage:vm:edit']">策略</el-button>
           <el-button link type="primary"  @click="handleUpdate(scope.row)" v-hasPermi="['manage:vm:edit']">修改</el-button>
           <!-- <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['manage:vm:remove']">删除</el-button> -->
@@ -183,6 +184,11 @@
       </template>
      
      </el-dialog>
+
+     <!-- 货道组件 -->
+    <ChannelDialog :goodVisible="goodVisible"  :goodData="goodData"  @handleCloseCood="handleCloseGood">
+
+    </ChannelDialog>
   </div>
 </template>
 
@@ -195,6 +201,9 @@ import {listNode} from "@/api/manage/node";
 import {listRegion} from "@/api/manage/region";
 import {listPolicy} from "@/api/manage/policy";
 import { el } from "element-plus/es/locales.mjs";
+//导入货道组建
+import ChannelDialog from "./components/ChannelDialog.vue";
+
 
 const { proxy } = getCurrentInstance();
 const { vm_status } = proxy.useDict('vm_status');
@@ -405,6 +414,19 @@ function handleUpdatePolicy(row) {
   });
 }
 
+
+const goodVisible = ref(false);//货道弹出层初始值false
+const goodData = ref({});//货道数据
+//打开货道弹出层
+const handleGoods = (row) => {
+  goodVisible.value = true;
+  goodData.value = row;
+  
+};
+//关闭货道弹出层
+const handleCloseGood = () => {
+  goodVisible.value = false;
+}
 getRegionOptions();
 getNodeOptions() ;
 getPartnerOptions();
@@ -412,3 +434,6 @@ getVmTypeOptions();
 
 getList();
 </script>
+
+<style lang="scss" scoped src="./index.scss"> 
+</style>
