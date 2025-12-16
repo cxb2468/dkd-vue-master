@@ -201,6 +201,7 @@ import {listNode} from "@/api/manage/node";
 import {listRegion} from "@/api/manage/region";
 import {listPolicy} from "@/api/manage/policy";
 import { el } from "element-plus/es/locales.mjs";
+import { nextTick } from "vue";
 //导入货道组建
 import ChannelDialog from "./components/ChannelDialog.vue";
 
@@ -419,13 +420,19 @@ const goodVisible = ref(false);//货道弹出层初始值false
 const goodData = ref({});//货道数据
 //打开货道弹出层
 const handleGoods = (row) => {
-  goodVisible.value = true;
-  goodData.value = row;
-  
+  // 先设置为 false，再在下一个 tick 设置为 true
+  // 这样可以确保即使上一次是 true 状态也能正确触发子组件的 watch
+  goodVisible.value = false;
+  nextTick(() => {
+    goodData.value = row;
+    goodVisible.value = true;
+  });
 };
 //关闭货道弹出层
 const handleCloseGood = () => {
   goodVisible.value = false;
+  // 清空数据，为下次打开做准备
+  goodData.value = {};
 }
 getRegionOptions();
 getNodeOptions() ;
@@ -435,5 +442,4 @@ getVmTypeOptions();
 getList();
 </script>
 
-<style lang="scss" scoped src="./index.scss"> 
-</style>
+<style lang="scss" scoped src="./index.scss"></style>

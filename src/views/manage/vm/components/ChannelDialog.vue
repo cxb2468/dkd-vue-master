@@ -210,7 +210,8 @@ watch(
   () => props.goodVisible,
   (val) => {
     visible.value = val;
-  }
+  },
+  { flush: 'post' } // 确保在DOM更新后执行
 );
 // ******定义方法******
 // 获取货道基本信息
@@ -234,9 +235,9 @@ const computedCurrentIndex = (vmRowIndex, vmColIndex) => {
   return (vmRowIndex - 1) * vmType.value.vmCol + vmColIndex - 1;
 };
 // 关闭货道弹窗
-
 const handleGoodcClose = () => {
-    visible.value = false
+    visible.value = false;
+    // 通知父组件更新状态
     emit('handleCloseGood');
 };
 const handleClickPrevButton = () => {
