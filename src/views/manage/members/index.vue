@@ -112,8 +112,9 @@
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['manage:members:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['manage:members:remove']">删除</el-button>
+          <el-button link type="primary"  @click="getDKPDetail(scope.row)" v-hasPermi="['manage:records:list']">查看DKP变更详情</el-button>
+          <el-button link type="primary"  @click="handleUpdate(scope.row)" v-hasPermi="['manage:members:edit']">修改</el-button>
+          <el-button link type="primary"  @click="handleDelete(scope.row)" v-hasPermi="['manage:members:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -180,11 +181,67 @@
         </div>
       </template>
     </el-dialog>
+    <el-dialog :title="'[' + currentMemberName + ']的DKP变更详情'" v-model="DKPDetailOpen" width="1150px" append-to-body>
+
+      <el-table :data="paginatedRecordsList" border class="black-border-table">
+      <!-- <el-table-column type="selection" width="55" align="center" /> -->
+      <el-table-column label="序号" type="index" align="center" prop="id" />
+    
+      <!-- <el-table-column label="会员ID" align="center" prop="memberId" >
+        <template #default="scope">
+          {{ scope.row.memberId || '' }}  
+          <!-- {{ memberList.find(item => item.id === scope.row.memberId)?.name || '' }}
+        </template>
+      </el-table-column> -->
+      <!-- <el-table-column label="会员姓名" align="center" prop="memberName" /> -->
+      <!-- <el-table-column label="活动ID" align="center" prop="activityId" >
+        <template #default="scope">
+          {{ activityList.find(item => item.id === scope.row.activityId)?.activityName || '' }}
+        </template>
+      </el-table-column> -->
+      <el-table-column label="活动名称" align="center" prop="activityName" width="150" />
+      <el-table-column label="事件日期" align="center" prop="eventDate" width="100">
+        <template #default="scope">
+          <span>{{ parseTime(scope.row.eventDate, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+      <!-- <el-table-column label="副本BOSS id" align="center" prop="bossId" >
+        <template #default="scope">
+          {{ bossList.find(item => item.id === scope.row.bossId)?.bossName || '' }}
+        </template>
+      </el-table-column> -->
+      <el-table-column label="BOSS名称" align="center" prop="bossName" width="110"  />
+      <el-table-column label="DKP加分" align="center" prop="dkpAdd" />
+      <!-- <el-table-column label="BOSS装备id" align="center" prop="itemId" >
+        <template #default="scope">
+          {{ itemList.find(item => item.id === scope.row.itemId)?.itemName || '' }}
+        </template>
+      </el-table-column> -->
+      <el-table-column label="获取装备名称" align="center" prop="dkpDeductItem" width="100" />
+      <el-table-column label="DKP减分" align="center" prop="dkpDeduct" />
+      <el-table-column label="操作后当前DKP" align="center" prop="currentDkp" />
+      <el-table-column label="变更原因" align="center" prop="reason" />
+      <el-table-column label="创建时间" align="center" prop="createdAt" width="180">
+        <template #default="scope">
+          <span>{{ parseTime(scope.row.createdAt, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+    </el-table>
+    
+    <pagination
+      v-show="totalRecords>0"
+      :total="totalRecords"
+      v-model:page="recordsQueryParams.pageNum"
+      v-model:limit="recordsQueryParams.pageSize"
+      @pagination="handleRecordsPagination"
+    />
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="Members">
 import { listMembers, getMembers, delMembers, addMembers, updateMembers } from "@/api/manage/members";
+import {listRecords} from "@/api/manage/records";
 
 const { proxy } = getCurrentInstance();
 const { sys_user_sex, member_level } = proxy.useDict('sys_user_sex', 'member_level');
@@ -197,7 +254,7 @@ const ids = ref([]);
 const single = ref(true);
 const multiple = ref(true);
 const total = ref(0);
-const title = ref("");
+const title = "";
 
 const data = reactive({
   form: {},
@@ -336,5 +393,67 @@ function handleExport() {
   }, `members_${new Date().getTime()}.xlsx`)
 }
 
+// 查看DKP变更详情
+const DKPDetailOpen = ref(false);
+const currentMemberName = ref('');
+const recordsList = ref([]);
+const paginatedRecordsList = ref([]);
+const totalRecords = ref(0);
+const recordsQueryParams = reactive({
+  pageNum: 1,
+  pageSize: 10
+});
+
+function handleRecordsPagination() {
+  const params = {
+    memberId: getCurrentMemberId(), // 获取当前会员ID
+    pageNum: recordsQueryParams.pageNum,
+    pageSize: recordsQueryParams.pageSize
+  };
+  listRecords(params).then(response => {
+    recordsList.value = response.rows;
+    paginatedRecordsList.value = response.rows;
+    totalRecords.value = response.total;
+  });
+}
+
+// 添加一个函数来获取当前会员ID
+let currentMemberId = null;
+function getCurrentMemberId() {
+  return currentMemberId;
+}
+
+function getDKPDetail(row) {
+    //根据会员id，查询DKP变更详情列表
+    currentMemberId = row.id; // 保存当前会员ID
+    const params = {
+      memberId: row.id,
+      pageNum: recordsQueryParams.pageNum,
+      pageSize: recordsQueryParams.pageSize
+    };
+    listRecords(params).then(response => {
+      recordsList.value = response.rows;
+      currentMemberName.value = row.name; // 保存当前会员姓名
+      totalRecords.value = response.total; // 更新总记录数
+      paginatedRecordsList.value = response.rows; // 直接使用返回的数据
+      DKPDetailOpen.value = true;
+    });
+
+}
+
 getList();
 </script>
+
+<style scoped>
+.black-border-table :deep(.el-table__inner-wrapper) {
+  border: 1px solid #000000 !important;
+}
+
+.black-border-table :deep(.el-table__cell) {
+  border-right: 1px solid #000000 !important;
+}
+
+.black-border-table :deep(th.el-table__cell) {
+  border-bottom: 1px solid #000000 !important;
+}
+</style>
